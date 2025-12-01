@@ -1,0 +1,113 @@
+@startuml AI_Document_SaaS
+
+title SaaS AI Document Platform Architecture\nRAG + Processing Service + Copilot Studio (Full Azure + Cost Efficient)
+
+actor User
+participant "Web App / Frontend" as FE
+participant "Document Processing Service\n(Azure Functions)" as DPS
+participant "Azure Blob Storage\n(Original Files)" as Blob
+participant "Azure PostgreSQL Flexible Server\n (metadata & results)" as DB
+participant "Azure OpenAI\n(AIEmeddings)" as AIEm
+participant "Azure AI Search\n(Vector Index)" as AIS
+participant "Azure OpenAI\n(LLM Answering)" as LLM
+participant "Copilot Studio\n(Orchestrator)" as Copilot
+
+== File Upload Flow ==
+
+User -> FE: 1. Upload Document\n(PDF / DOCX / TXT)
+activate FE
+
+FE -> DPS: 2. POST /documents/upload\n(file + user_id)
+activate DPS
+
+DPS -> Blob: 3. Store original file
+activate Blob
+Blob --> DPS: File URL
+deactivate Blob
+
+DPS -> DPS: 4. Extract text\n(OCR if needed)
+DPS -> DPS: 5. Chunk text\n(300–800 tokens)
+
+loop for each chunk
+    DPS -> AIEm: 6. Generate AIEmedding\n(AIEmedding-3-small)
+    activate AIEm
+    AIEm --> DPS: Vector[1536]
+    deactivate AIEm
+end
+
+DPS -> AIS: 7. Index vector chunks + metadata
+activate AIS
+AIS --> DPS: Indexed OK
+deactivate AIS
+
+DPS -> DB: 8. Save metadata\n(doc_id, file_url, page_count, chunk_count, user_id)
+activate DB
+DB --> DPS: Success
+deactivate DB
+
+DPS --> FE: 9. Upload complete
+deactivate DPS
+
+FE --> User: 10. "Document successfully processed"
+deactivate FE
+
+== Question Answering (RAG) ==
+
+User -> FE: 11. Ask question: "Explain policy difference"
+activate FE
+
+FE -> Copilot: 12. Send user query
+activate Copilot
+
+Copilot -> AIEm: 13. Generate query AIEmedding
+activate AIEm
+AIEm --> Copilot: Query vector
+deactivate AIEm
+
+Copilot -> AIS: 14. Vector search (top K = 5 chunks)
+activate AIS
+AIS --> Copilot: 15. Relevant chunks + metadata
+deactivate AIS
+
+Copilot -> LLM: 16. Answer using context (context + question)
+activate LLM
+LLM --> Copilot: 17. Generated answer + citations
+deactivate LLM
+
+Copilot --> FE: 18. Response answer + citations
+deactivate Copilot
+
+FE --> User: 19. Show answer & sources
+deactivate FE
+
+== Document Comparison Flow ==
+
+User -> FE: 20. Compare documents A & B
+activate FE
+
+FE -> DPS: 21. GET /documents/{A,B}/chunks
+activate DPS
+
+DPS -> AIS: 22. Fetch chunks by doc_id
+activate AIS
+AIS --> DPS: Chunks A and B
+deactivate AIS
+
+DPS --> FE: 23. Chunk sets returned
+deactivate DPS
+
+FE -> Copilot: 24. Request comparison\n(chunks A + B)
+activate Copilot
+
+Copilot -> LLM: 25. "Compare Document A and B"\n(highlighting differences)
+activate LLM
+LLM --> Copilot: 26. Diff summary + impact analysis
+deactivate LLM
+
+Copilot --> FE: 27. Comparison result
+deactivate Copilot
+
+FE --> User: 28. Show detailed differences
+deactivate FE
+
+@enduml
