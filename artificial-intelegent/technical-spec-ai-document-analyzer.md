@@ -246,22 +246,105 @@ Uploads and processes one or multiple documents.
 
 ### `GET /documents/{id}`
 
-Returns metadata and processing status.
+Retrieves metadata and the processing status of a specific document.
 
-### `POST /query`
+#### Request
+- **Method**: `GET`
+- **URL Parameters**:
+  - `id` (string, required): The unique identifier of the document.
+
+#### Response
+
+**Success Response**:
+- **Status Code**: `200 OK`
+- **Body**:
+```json
+{
+  "document_id": "uuid",
+  "name": "example.pdf",
+  "file_url": "https://blobstorage.example.com/documents/example.pdf",
+  "status": "Processed",
+  "page_count": 10,
+  "chunk_count": 5,
+  "created_at": "2025-12-01T12:00:00Z"
+}
+```
+
+**Error Response**:
+- **Status Code**: `404 Not Found`
+- **Body**:
+```json
+{
+  "message": "Document not found."
+}
+```
+
+- **Status Code**: `500 Internal Server Error`
+- **Body**:
+```json
+{
+  "message": "An unexpected error occurred while retrieving the document."
+}
+```
+
+### `POST /ask`
 
 Runs a RAG-based question query.
 
 ```json
 {
-  "document_id": "uuid",
   "question": "Summarize the confidentiality section."
 }
 ```
 
 ### `GET /documents/{id}/chunks`
 
-Returns chunks for document comparison.
+Retrieves the chunks of a specific document for comparison purposes.
+
+#### Request
+- **Method**: `GET`
+- **URL Parameters**:
+  - `id` (string, required): The unique identifier of the document.
+
+#### Response
+
+**Success Response**:
+- **Status Code**: `200 OK`
+- **Body**:
+```json
+{
+  "document_id": "uuid",
+  "chunks": [
+    {
+      "chunk_index": 0,
+      "content": "This is the content of the first chunk.",
+      "vector_id": "vector123"
+    },
+    {
+      "chunk_index": 1,
+      "content": "This is the content of the second chunk.",
+      "vector_id": "vector124"
+    }
+  ]
+}
+```
+
+**Error Response**:
+- **Status Code**: `404 Not Found`
+- **Body**:
+```json
+{
+  "message": "Document not found."
+}
+```
+
+- **Status Code**: `500 Internal Server Error`
+- **Body**:
+```json
+{
+  "message": "An unexpected error occurred while retrieving the document chunks."
+}
+```
 
 ---
 
