@@ -90,6 +90,8 @@ User → Web App → Azure Functions → Blob Storage
                             User
 ```
 
+![Sequence Diagram](image.png)
+
 ### Azure Components
 
 | Component           | Azure Service                         |
